@@ -1,0 +1,200 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Interview Processor API",
+    "description": "API for processing interview workflows with human approval",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{apim-name}.azure-api.net/interview/v1"
+    }
+  ],
+  "paths": {
+    "/start-interview": {
+      "post": {
+        "summary": "Start a new interview workflow",
+        "operationId": "startInterview",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["interview_id", "candidate_name"],
+                "properties": {
+                  "interview_id": {
+                    "type": "string",
+                    "description": "Unique interview identifier"
+                  },
+                  "candidate_name": {
+                    "type": "string",
+                    "description": "Name of the candidate"
+                  },
+                  "interview_data": {
+                    "type": "object",
+                    "description": "Additional interview data"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Workflow started successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "instance_id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "status_query_uri": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/send-approval/{instanceId}": {
+      "post": {
+        "summary": "Send approval decision for an interview",
+        "operationId": "sendApproval",
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["approved"],
+                "properties": {
+                  "approved": {
+                    "type": "boolean"
+                  },
+                  "reviewer": {
+                    "type": "string"
+                  },
+                  "comments": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Approval sent successfully"
+          }
+        }
+      }
+    },
+    "/status/{instanceId}": {
+      "get": {
+        "summary": "Get workflow status",
+        "operationId": "getStatus",
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workflow status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "runtimeStatus": {
+                      "type": "string"
+                    },
+                    "input": {
+                      "type": "object"
+                    },
+                    "output": {
+                      "type": "object"
+                    },
+                    "createdTime": {
+                      "type": "string"
+                    },
+                    "lastUpdatedTime": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check endpoint",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}

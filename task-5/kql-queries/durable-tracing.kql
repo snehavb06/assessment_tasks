@@ -1,0 +1,46 @@
+// Durable Functions Tracing
+// End-to-end tracing of durable function orchestrations
+// 1. Orchestration Lifecycle
+FunctionAppLogs
+| where TimeGenerated > ago(24h)
+| where Category == "Host.Triggers.DurableTask"
+| where Message contains "Orchestrator"
+| extend InstanceId = extract("instanceId = '([a-f0-9-]+)'", 1, Message)
+| extend FunctionName = extract("functionName = '([^']+)'", 1, Message)
+| extend Status = case(
+    Message contains "started", "Started",
+    Message contains "completed", "Completed",
+    Message contains "failed", "Failed",
+    Message contains "waiting", "Waiting",
+    "Other"
+    )
+| summarize
+    Started = countif(Status == "Started"),
+    Completed = countif(Status == "Completed"),
+    Failed = countif(Status == "Failed"),
+    Waiting = countif(Status == "Waiting")
+    by FunctionName, bin(TimeGenerated, 1h)
+
+// 2. Find Long-Running Orchestrations
+FunctionAppLogs
+| where TimeGenerated > ago(24h)
+| where Category == "Host.Triggers.DurableTask"
+| where Message contains "Orchestrator started" or Message contains "Orchestrator completed"
+| extend InstanceId = extract("instanceId = '([a-f0-9-]+)'", 1, Message)
+| extend FunctionName = extract("functionName = '([^']+)'", 1, Message)
+| extend EventType = iff(Message contains "started", "Start", "End")
+| summarize StartTime = minif(TimeGenerated, EventType == "Start"),
+    EndTime = maxif(TimeGenerated, EventType == "End")
+    by InstanceId, FunctionName
+| extend Duration = datetime_diff('second', EndTime, StartTime)
+| where Duration > 300 // Longer than 5 minutes
+| project InstanceId, FunctionName, StartTime, Duration, EndTime
+| order by Duration desc
+
+// 3. Human Approval Steps Tracking
+FunctionAppLogs
+| where TimeGenerated > ago(24h)
+| where Message contains "Waiting for approval" or Message contains "Approval received"
+| extend InstanceId = extract("instanceId = '([a-f0-9-]+)'", 1, Message)
+| extend ApprovalEvent = iff(Message contains "Waiting", "WaitStarted", "ApprovalReceived")
+| summarize by InstanceId, ApprovalEvent, bin(TimeGenerated, 1m)

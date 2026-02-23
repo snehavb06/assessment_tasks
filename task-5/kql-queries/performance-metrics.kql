@@ -1,0 +1,48 @@
+// Performance Metrics
+// Query to analyze function performance
+// 1. Response Time Percentiles by Function
+AppRequests
+| where TimeGenerated > ago(24h)
+| where Name contains "Interview"
+| summarize
+    RequestCount = count(),
+    AvgDuration = avg(DurationMs),
+    P50Duration = percentile(DurationMs, 50),
+    P95Duration = percentile(DurationMs, 95),
+    P99Duration = percentile(DurationMs, 99),
+    MaxDuration = max(DurationMs)
+    by Name
+| order by AvgDuration desc
+
+// 2. Performance Trend
+AppRequests
+| where TimeGenerated > ago(24h)
+| where Name contains "Interview"
+| summarize
+    AvgDuration = avg(DurationMs),
+    P95Duration = percentile(DurationMs, 95)
+    by bin(TimeGenerated, 15m), Name
+| render timechart
+
+// 3. Slow Requests Analysis
+AppRequests
+| where TimeGenerated > ago(24h)
+| where DurationMs > 5000
+| project
+    TimeGenerated,
+    Name,
+    DurationMs,
+    Url = url,
+    OperationId,
+    Success
+| order by DurationMs desc
+| take 20
+
+// 4. Dependency Performance
+AppDependencies
+| where TimeGenerated > ago(24h)
+| summarize
+    AvgDuration = avg(DurationMs),
+    Count = count()
+    by Type, Target
+| order by AvgDuration desc

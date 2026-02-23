@@ -1,0 +1,28 @@
+// Function Errors Analysis
+// Query to analyze function errors and patterns
+
+// 1. Error Summary by Function
+FunctionAppLogs
+| where TimeGenerated > ago(24h)
+| where Level == "Error"
+| summarize ErrorCount = count() by FunctionName, bin(TimeGenerated, 1h)
+| order by TimeGenerated desc, ErrorCount desc
+
+// 2. Error Details with Stack Traces
+FunctionAppLogs
+| where TimeGenerated > ago(6h)
+| where Level == "Error"
+| project TimeGenerated, FunctionName, Message, ExceptionType, InvocationId
+| extend ErrorType = extract("([a-zA-Z0-9]+Exception)", 1, Message)
+| order by TimeGenerated desc
+
+// 3. Error Rate Trend
+FunctionAppLogs
+| where TimeGenerated > ago(24h)
+| summarize 
+    TotalRequests = count(),
+    Errors = countif(Level == "Error"),
+    ErrorRate = (countif(Level == "Error") * 100.0) / count()
+    by bin(TimeGenerated, 5m)
+| project TimeGenerated, ErrorRate, Errors
+| render timechart
