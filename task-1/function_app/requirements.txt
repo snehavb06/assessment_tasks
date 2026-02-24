@@ -1,0 +1,9 @@
+azure-functions==1.17.0
+azure-durable-functions==1.2.4
+azure-cosmos==4.5.1
+azure-identity==1.15.0
+azure-storage-blob==12.19.0
+opencensus-ext-azure==1.1.13
+opencensus-ext-logging==0.1.1
+python-dotenv==1.0.0
+pydantic==2.5.0
